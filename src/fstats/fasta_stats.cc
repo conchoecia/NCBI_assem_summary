@@ -221,6 +221,7 @@ static void print_stats(const std::list<Scaffold> &scaffolds) {
 		++n50_scafs;
 		x += a->total_size;
 	}
+    //reset the counter
 	if (a != scaffolds.begin()) {
 		--a;
 	}
@@ -234,18 +235,17 @@ static void print_stats(const std::list<Scaffold> &scaffolds) {
 	if (b != contigs.begin()) {
 		--b;
 	}
-	// print statistics
 	// num_scaffolds
 	// num_tigs
-	// total scaffolds 
+	// total scaffolds
 	// tot_tigs
 	// scaffold N50
 	// scaffold L50
-	// contig_N50	
+	// contig_N50
 	// contig_L50
-	// GC_total
 	// perGap
-	
+    // N95 scaffold lengths
+
 	// num_scaffolds
 	printf("%lu\t", scaffolds.size());
 	// num_contigs
@@ -255,7 +255,7 @@ static void print_stats(const std::list<Scaffold> &scaffolds) {
 	// total contigs
 	printf("%lu\t", contig_seq);
 	//scaffold N50
-	printf("%lu\t", a->total_size);	
+	printf("%lu\t", a->total_size);
 	//scaffold L50
 	printf("%ld\t", n50_scafs);
 	//contig N50
@@ -263,7 +263,22 @@ static void print_stats(const std::list<Scaffold> &scaffolds) {
 	//contig L50
 	printf("%ld\t", n50_contigs);
 	// percent gap
-	printf("%4.4f%%\n", (double)100 * gap_seq / scaffold_seq);
+	printf("%4.4f%%\t", (double)100 * gap_seq / scaffold_seq);
+    // print the lengths of the N95 scaffolds
+    printf("[");
+    long temp = 0;
+	for (a = scaffolds.begin(); a != end_a && 1.05 * temp < scaffold_seq; ++a) {
+        printf("%ld", a->total_size);
+		temp += a->total_size;
+        if  (1.05 * temp < scaffold_seq){
+            printf(",");
+        }
+	} printf("]");
+      //reset the counter
+	  if (a != scaffolds.begin()) {
+	  	--a;
+	  }
+
 }
 
 static void print_size(const int lengths[], int i, int one_less = 0, int right_justify = 0) {
