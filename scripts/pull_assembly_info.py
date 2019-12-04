@@ -45,7 +45,9 @@ def argparser():
     parser.add_argument('-p', '--path',
                         type=dir_path,
                         required = True,
-                        help="""The directory that contains the assembly files.""")
+                        nargs='+',
+                        help="""The directories that contains the assembly files.
+                        Each directory name should be separated by a space.""")
     parser.add_argument('-e', '--email',
                         type=str,
                         required = True,
@@ -117,7 +119,7 @@ def path_to_filelist(path):
                 add_this = True
                 break
         if add_this:
-            final_files.append(tfile)
+            final_files.append(os.path.join(path,tfile))
     return(final_files)
 
 def run_fasta_stats(fpath):
@@ -141,7 +143,15 @@ def main(args):
     #Get one from https://www.ncbi.nlm.nih.gov/account/settings/ page
     Entrez.api_key= args.api_key
     #Get a file list of assemblies to process
-    flist = path_to_filelist(args.path)
+    flist=[]
+    if type(args.path) == str:
+        # user has just passed one path
+        flist = path_to_filelist(args.path)
+    else:
+        # user has passed multiple paths
+        for tpath in args.path:
+            templist = path_to_filelist(tpath)
+            flist = flist + templist
     # for each file generate a line on the CSV
     all_samples = []
     for tfile in flist:
@@ -164,7 +174,7 @@ def main(args):
 
     # now make a df with all the results
     df = pd.DataFrame(all_samples)
-    df.to_csv("output.csv")
+    df.to_csv("genome_info.tsv", sep='\t')
 
 if __name__ == "__main__":
     args = argparser()
