@@ -127,9 +127,13 @@ def run_fasta_stats(fpath):
     This runs fasta_stats on an assembly and returns a dictionary of the values.
     """
     this_data = {}
+    # This version is if you want N95_scaflen. Not a good idea for bad assemblies.
+    #new_fields = ["num_scaffolds", "num_tigs", "tot_size_scaffolds",
+    #              "tot_size_tigs", "scaffold_N50", "scaffold_L50",
+    #              "contig_N50", "contig_L50", "perGap", "N95_scaflen"]
     new_fields = ["num_scaffolds", "num_tigs", "tot_size_scaffolds",
                   "tot_size_tigs", "scaffold_N50", "scaffold_L50",
-                  "contig_N50", "contig_L50", "perGap", "N95_scaflen"]
+                  "contig_N50", "contig_L50", "perGap"]
     tcmd = "{} {}".format(fs_path, fpath).split(" ")
     results = subprocess.run(tcmd, stdout=subprocess.PIPE).stdout.decode('utf-8').split()
     assert len(new_fields)==len(results)
@@ -159,10 +163,11 @@ def main(args):
         this_dict = {}
         this_dict["assem_file"] = tfile
         # get the NCBI info first
-        term = "_".join(tfile.split("_")[:2])
+        term = "_".join(tfile.split("/")[-1].split("_")[:2])
         ids = get_ids(term)
         if len(ids[0]) == 0:
-            pass
+            for temp in ["AssemblyName", "Organism", "SpeciesName"]:
+                this_dict[temp] = tfile.split("/")[-1]
         else:
             this_dict = get_assembly_summary_dict(ids[0][0])
 
