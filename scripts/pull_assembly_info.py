@@ -93,8 +93,9 @@ def get_assembly_summary_dict(id):
         if key in field_list:
             this_dict[key] = temp[key]
         elif key == "GB_BioProjects":
-            for subkey in temp["GB_BioProjects"][0]:
-                this_dict[subkey] = temp["GB_BioProjects"][0][subkey]
+            if len(temp["GB_BioProjects"]) > 0:
+                for subkey in temp["GB_BioProjects"][0]:
+                    this_dict[subkey] = temp["GB_BioProjects"][0][subkey]
         elif key == "Synonym":
             for subkey in temp["Synonym"]:
                 if subkey in SynList:
