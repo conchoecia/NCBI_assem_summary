@@ -226,15 +226,15 @@ static void print_stats(const std::list<Scaffold> &scaffolds) {
     for (a = scaffolds.begin(); a != end_a && 1.05 * x < scaffold_seq; ++a) {
         if ( 2 * x < scaffold_seq){
           ++l50_scaffolds;
-          n50_scaffolds += a->total_size;
+          n50_scaffolds = a->total_size;
         }
         if (1.1 * x < scaffold_seq){
           ++l90_scaffolds;
-          n90_scaffolds += a->total_size;
+          n90_scaffolds = a->total_size;
         }
         ++l95_scaffolds;
         x += a->total_size;
-        n95_scaffolds += a->total_size;
+        n95_scaffolds = a->total_size;
     }
     //reset the counter
     if (a != scaffolds.begin()) {
@@ -251,15 +251,15 @@ static void print_stats(const std::list<Scaffold> &scaffolds) {
     for (x = 0; b != end_b && 1.05 * x < contig_seq; ++b) {
         if ( 2 * x < contig_seq){
           ++l50_contigs;
-          n50_contigs += b->size();
+          n50_contigs = b->size();
         }
         if ( 1.1 * x < contig_seq){
           ++l90_contigs;
-          n90_contigs += b->size();
+          n90_contigs = b->size();
         }
         ++l95_contigs;
         x += b->size();
-        n95_contigs += b->size();
+        n95_contigs = b->size();
     }
     if (b != contigs.begin()) {
         --b;
