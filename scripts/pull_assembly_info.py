@@ -13,6 +13,7 @@ The assembly files must be named as they were downloaded from NCBI.
 """
 import argparse
 from Bio import Entrez
+from collections import defaultdict
 from glob import glob
 import os
 from os import listdir
@@ -21,11 +22,6 @@ import pandas as pd
 import subprocess
 import sys
 import time
-from ete3 import NCBITaxa
-
-# first update the database
-ncbi = NCBITaxa()
-ncbi.update_taxonomy_database()
 
 script_path = os.path.dirname(os.path.realpath(__file__))
 fs_path = os.path.join(script_path, "../bin/fasta_stats")
@@ -153,6 +149,37 @@ def run_fasta_stats(fpath):
         this_data[new_fields[i]] = results[i]
     return(this_data)
 
+def get_lineage(taxid):
+    '''Get the full lineage for a taxid from Entrez'''
+    handle = Entrez.efetch(db="taxonomy", id=taxid, retmode="xml")
+    records = Entrez.read(handle)
+    lineage = defaultdict(lambda: 'Unclassified')
+    lineage["Bilateria"] = "NO"
+    lineage["Deuterostomia"] = "NO"
+    lineage["Protostomia"] = "NO"
+    lineage["Opisthokonta"] = "NO"
+    lineage["Metazoa"] = "NO"
+    lineage["Organism"] = records[0]['ScientificName']
+    for entry in records[0]['LineageEx']:
+        if entry['Rank'] in ['superkingdom', 'kingdom', 'phylum',
+                             'class', 'order', 'family',
+                             'genus', 'species']:
+            lineage[entry['Rank']] = entry['ScientificName'].split(' ')[-1]
+            lineage["{}_id".format(entry['Rank'])] = int(entry['TaxId'].split(' ')[-1])
+        # entry as integer
+        eai = int(entry["TaxId"])
+        if eai == 33213:
+            lineage["Bilateria"] = "YES"
+        elif eai == 33317:
+            lineage["Protostomia"] = "YES"
+        elif eai == 33511:
+            lineage["Deuterostomia"] = "YES"
+        elif eai == 33154:
+            lineage["Opisthokonta"] = "YES"
+        elif eai == 33208:
+            lineage["Metazoa"] = "YES"
+    return dict(lineage)
+
 def main(args):
     #Increase query limit to 10/s & get warnings
     Entrez.email = args.email
@@ -192,13 +219,21 @@ def main(args):
             # try to get the taxid from the filename
             file_bname = os.path.basename(tfile)
             if file_bname.split("_")[0].lower() == "taxid":
-                taxid = int(file_bname[1])
+                taxid = int(float(file_bname.split("_")[1]))
                 z1["Taxid"] = taxid
             else:
                 # We can't find the taxid from the filename
                 pass
+        # Now, get taxonomic information from the NCBI Taxonomy Database
+        lin_dict={}
+        if "Taxid" in z1:
+            lin_dict = get_lineage(z1["Taxid"])
+        else:
+            print(" - this file contains no taxid")
 
-        all_samples.append(z)
+        z2 = {**z1, **lin_dict}
+
+        all_samples.append(z2)
         time.sleep(1)
 
     # now make a df with all the results
