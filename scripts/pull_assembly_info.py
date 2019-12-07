@@ -150,11 +150,9 @@ def run_fasta_stats(fpath):
                   "perGap"]
     tcmd = "{} {}".format(fs_path, fpath).split(" ")
     results = subprocess.run(tcmd, stdout=subprocess.PIPE).stdout.decode('utf-8').split()
-    #print(results)
     assert len(new_fields)==len(results)
     for i in range(len(results)):
         this_data[new_fields[i]] = results[i]
-    print(this_data)
     return(this_data)
 
 def get_lineage(taxid):
