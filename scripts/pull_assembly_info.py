@@ -140,8 +140,12 @@ def run_fasta_stats(fpath):
     #              "tot_size_tigs", "scaffold_N50", "scaffold_L50",
     #              "contig_N50", "contig_L50", "perGap", "N95_scaflen"]
     new_fields = ["num_scaffolds", "num_tigs", "tot_size_scaffolds",
-                  "tot_size_tigs", "scaffold_N50", "scaffold_L50",
-                  "contig_N50", "contig_L50", "perGap"]
+                  "tot_size_tigs",
+                  "scaffold_N50", "scaffold_L50",
+                  "scaffold_N90", "scaffold_L90",
+                  "contig_N50", "contig_L50",
+                  "contig_N90", "contig_L90",
+                  "perGap"]
     tcmd = "{} {}".format(fs_path, fpath).split(" ")
     results = subprocess.run(tcmd, stdout=subprocess.PIPE).stdout.decode('utf-8').split()
     assert len(new_fields)==len(results)

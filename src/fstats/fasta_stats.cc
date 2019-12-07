@@ -215,34 +215,67 @@ static void print_stats(const std::list<Scaffold> &scaffolds) {
 			big_scaffold_seq += a->total_size;
 		}
 	}
-	long n50_scafs = 0;
-	long x = 0;
-	for (a = scaffolds.begin(); a != end_a && 2 * x < scaffold_seq; ++a) {
-		++n50_scafs;
-		x += a->total_size;
-	}
+
+    long n50_scaffolds = 0;
+    long n90_scaffolds = 0;
+    long n95_scaffolds = 0;
+    long l50_scaffolds = 0;
+    long l90_scaffolds = 0;
+    long l95_scaffolds = 0;
+    long x = 0;
+    for (a = scaffolds.begin(); a != end_a && 1.05 * x < scaffold_seq; ++a) {
+        if ( 2 * x < scaffold_seq){
+          ++l50_scaffolds;
+          n50_scaffolds += a->total_size;
+        }
+        if (1.1 * x < scaffold_seq){
+          ++l90_scaffolds;
+          n90_scaffolds += a->total_size;
+        }
+        ++l95_scaffolds;
+        x += a->total_size;
+        n95_scaffolds += a->total_size;
+    }
     //reset the counter
-	if (a != scaffolds.begin()) {
-		--a;
-	}
-	long n50_contigs = 0;
-	std::list<Contig>::const_iterator b = contigs.begin();
-	std::list<Contig>::const_iterator end_b = contigs.end();
-	for (x = 0; b != end_b && 2 * x < contig_seq; ++b) {
-		++n50_contigs;
-		x += b->size();
-	}
-	if (b != contigs.begin()) {
-		--b;
-	}
-	// num_scaffolds
-	// num_tigs
-	// total scaffolds
-	// tot_tigs
-	// scaffold N50
-	// scaffold L50
+    if (a != scaffolds.begin()) {
+        --a;
+    }
+    long n50_contigs = 0;
+    long n90_contigs = 0;
+    long n95_contigs = 0;
+    long l50_contigs = 0;
+    long l90_contigs = 0;
+    long l95_contigs = 0;
+    std::list<Contig>::const_iterator b = contigs.begin();
+    std::list<Contig>::const_iterator end_b = contigs.end();
+    for (x = 0; b != end_b && 1.05 * x < contig_seq; ++b) {
+        if ( 2 * x < contig_seq){
+          ++l50_contigs;
+          n50_contigs += b->size();
+        }
+        if ( 1.1 * x < contig_seq){
+          ++l90_contigs;
+          n90_contigs += b->size();
+        }
+        ++l95_contigs;
+        x += b->size();
+        n95_contigs += b->size();
+    }
+    if (b != contigs.begin()) {
+        --b;
+    }
+    // num_scaffolds
+    // num_tigs
+    // total scaffolds
+    // tot_tigs
+    // scaffold N50
+    // scaffold L50
+    // scaffold N90
+    // scaffold L90
 	// contig_N50
 	// contig_L50
+    // contig N90
+    // contig L90
 	// perGap
     // N95 scaffold lengths NO
 
@@ -255,13 +288,21 @@ static void print_stats(const std::list<Scaffold> &scaffolds) {
 	// total contigs
 	printf("%lu\t", contig_seq);
 	//scaffold N50
-	printf("%lu\t", a->total_size);
+	printf("%lu\t", n50_scaffolds);
 	//scaffold L50
-	printf("%ld\t", n50_scafs);
+	printf("%ld\t", l50_scaffolds);
+	//scaffold N90
+	printf("%lu\t", n90_scaffolds);
+	//scaffold L90
+	printf("%ld\t", l90_scaffolds);
 	//contig N50
-	printf("%lu\t", b->size());
+	printf("%lu\t", n50_contigs);
 	//contig L50
-	printf("%ld\t", n50_contigs);
+	printf("%ld\t", l50_contigs);
+	//contig N90
+	printf("%lu\t", n90_contigs);
+	//contig L90
+	printf("%ld\t", l90_contigs);
 	// percent gap
 	printf("%4.4f%%\t", (double)100 * gap_seq / scaffold_seq);
     // print the lengths of the N95 scaffolds
