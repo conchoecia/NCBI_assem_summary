@@ -4,6 +4,12 @@
 This program takes a directory of assembly files from NCBI,
  gathers info from NCBI about the assembly, then runs The starting point for this script is this answer in biostars:
    https://www.biostars.org/p/345510/
+
+The assembly files must be named as they were downloaded from NCBI.
+  - File names start with 'GFA' or 'GCA'
+  - If this isn't an assembly from NCBI, then it must be:
+    -    'Taxid_<number>_info.fasta'
+    - or 'taxid_<number>_info.fasta'
 """
 import argparse
 from Bio import Entrez
@@ -15,6 +21,11 @@ import pandas as pd
 import subprocess
 import sys
 import time
+from ete3 import NCBITaxa
+
+# first update the database
+ncbi = NCBITaxa()
+ncbi.update_taxonomy_database()
 
 script_path = os.path.dirname(os.path.realpath(__file__))
 fs_path = os.path.join(script_path, "../bin/fasta_stats")
@@ -174,7 +185,19 @@ def main(args):
 
         # now get the other assembly info from fasta_stats
         fstats_dict = run_fasta_stats(tfile)
-        z = {**this_dict, **fstats_dict}
+        z1 = {**this_dict, **fstats_dict}
+
+        # if we don't have the taxid info, try to get it from the file name
+        if "Taxid" not in z1:
+            # try to get the taxid from the filename
+            file_bname = os.path.basename(tfile)
+            if file_bname.split("_")[0].lower() == "taxid":
+                taxid = int(file_bname[1])
+                z1["Taxid"] = taxid
+            else:
+                # We can't find the taxid from the filename
+                pass
+
         all_samples.append(z)
         time.sleep(1)
 
