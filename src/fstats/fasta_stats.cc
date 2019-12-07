@@ -272,10 +272,14 @@ static void print_stats(const std::list<Scaffold> &scaffolds) {
     // scaffold L50
     // scaffold N90
     // scaffold L90
+    // scaffold N95
+    // scaffold L95
 	// contig_N50
 	// contig_L50
     // contig N90
     // contig L90
+    // contig N95
+    // contig L95
 	// perGap
     // N95 scaffold lengths NO
 
@@ -295,6 +299,10 @@ static void print_stats(const std::list<Scaffold> &scaffolds) {
 	printf("%lu\t", n90_scaffolds);
 	//scaffold L90
 	printf("%ld\t", l90_scaffolds);
+	//scaffold N95
+	printf("%lu\t", n95_scaffolds);
+	//scaffold L95
+	printf("%ld\t", l95_scaffolds);
 	//contig N50
 	printf("%lu\t", n50_contigs);
 	//contig L50
@@ -303,6 +311,10 @@ static void print_stats(const std::list<Scaffold> &scaffolds) {
 	printf("%lu\t", n90_contigs);
 	//contig L90
 	printf("%ld\t", l90_contigs);
+	//contig N95
+	printf("%lu\t", n95_contigs);
+	//contig L95
+	printf("%ld\t", l95_contigs);
 	// percent gap
 	printf("%4.4f%%\t", (double)100 * gap_seq / scaffold_seq);
     // print the lengths of the N95 scaffolds

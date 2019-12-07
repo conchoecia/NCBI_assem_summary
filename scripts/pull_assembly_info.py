@@ -143,8 +143,10 @@ def run_fasta_stats(fpath):
                   "tot_size_tigs",
                   "scaffold_N50", "scaffold_L50",
                   "scaffold_N90", "scaffold_L90",
+                  "scaffold_N95", "scaffold_L95",
                   "contig_N50", "contig_L50",
                   "contig_N90", "contig_L90",
+                  "contig_N95", "contig_L95",
                   "perGap"]
     tcmd = "{} {}".format(fs_path, fpath).split(" ")
     results = subprocess.run(tcmd, stdout=subprocess.PIPE).stdout.decode('utf-8').split()
@@ -225,6 +227,8 @@ def main(args):
             if file_bname.split("_")[0].lower() == "taxid":
                 taxid = int(float(file_bname.split("_")[1]))
                 z1["Taxid"] = taxid
+                z1["SpeciesName"] = taxid
+                z1["SpeciesiTaxid"] = taxid
             else:
                 # We can't find the taxid from the filename
                 pass
