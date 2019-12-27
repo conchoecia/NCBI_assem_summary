@@ -118,6 +118,8 @@ def path_to_filelist(path):
       ["fna.gz", ".fna", ".fasta.gz", ".fasta", ".fa.gz", ".fa"]
     """
     onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
+    print
+
     fts = ["fna.gz", ".fna", ".fasta.gz", ".fasta", ".fa.gz", ".fa"]
     final_files = []
     for tfile in onlyfiles:
@@ -209,6 +211,10 @@ def main(args):
         this_dict["assem_file"] = tfile
         # get the NCBI info first
         term = "_".join(tfile.split("/")[-1].split("_")[:2])
+        fts = ["fna.gz", ".fna", ".fasta.gz", ".fasta", ".fa.gz", ".fa"]
+        for this_str in fts:
+            term = term.replace(this_str, "")
+        term = term.split('.')[0]
         ids = get_ids(term)
         if len(ids[0]) == 0:
             for temp in ["AssemblyName", "Organism", "SpeciesName"]:
