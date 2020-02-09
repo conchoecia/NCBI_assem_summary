@@ -141,20 +141,32 @@ def run_fasta_stats(fpath):
     #new_fields = ["num_scaffolds", "num_tigs", "tot_size_scaffolds",
     #              "tot_size_tigs", "scaffold_N50", "scaffold_L50",
     #              "contig_N50", "contig_L50", "perGap", "N95_scaflen"]
-    new_fields = ["num_scaffolds", "num_tigs", "tot_size_scaffolds",
+    new_fields = ["num_scaffolds",
+                  "num_tigs",
+                  "tot_size_scaffolds",
                   "tot_size_tigs",
-                  "scaffold_N50", "scaffold_L50",
-                  "scaffold_N90", "scaffold_L90",
-                  "scaffold_N95", "scaffold_L95",
-                  "contig_N50", "contig_L50",
-                  "contig_N90", "contig_L90",
-                  "contig_N95", "contig_L95",
-                  "perGap", "numGaps"]
+                  "scaffold_N50",
+                  "scaffold_L50",
+                  "scaffold_N90",
+                  "scaffold_L90",
+                  "scaffold_N95",
+                  "scaffold_L95",
+                  "contig_N50",
+                  "contig_L50",
+                  "contig_N90",
+                  "contig_L90",
+                  "contig_N95",
+                  "contig_L95",
+                  "perGap",
+                  "numGaps"]
     tcmd = "{} {}".format(fs_path, fpath).split(" ")
     results = subprocess.run(tcmd, stdout=subprocess.PIPE).stdout.decode('utf-8').split()
     assert len(new_fields)==len(results)
     for i in range(len(results)):
-        this_data[new_fields[i]] = results[i]
+        if new_fields[i] == "perGap":
+            this_data[new_fields[i]] = float(results[i].strip('%'))
+        else:
+            this_data[new_fields[i]] = int(results[i])
     return(this_data)
 
 def get_lineage(taxid):
@@ -234,7 +246,7 @@ def main(args):
                 taxid = int(float(file_bname.split("_")[1]))
                 z1["Taxid"] = taxid
                 z1["SpeciesName"] = taxid
-                z1["SpeciesiTaxid"] = taxid
+                z1["SpeciesTaxid"] = taxid
             else:
                 # We can't find the taxid from the filename
                 pass
@@ -253,8 +265,8 @@ def main(args):
     # now make a df with all the results
     df = pd.DataFrame(all_samples)
     # now calculate the number of gaps per MB
-    df["gaps_per_MB"] = df["numGaps"]/df["tot_size_scaffolds"]
-    df.to_csv("genome_info.tsv", sep='\t')
+    df["gaps_per_MB"] = df["numGaps"]/(df["tot_size_scaffolds"]/1000000)
+    df.to_csv("genome_info.tsv", sep='\t', index=False)
 
 if __name__ == "__main__":
     args = argparser()
