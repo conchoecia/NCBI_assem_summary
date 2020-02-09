@@ -149,7 +149,7 @@ def run_fasta_stats(fpath):
                   "contig_N50", "contig_L50",
                   "contig_N90", "contig_L90",
                   "contig_N95", "contig_L95",
-                  "perGap"]
+                  "perGap", "numGaps"]
     tcmd = "{} {}".format(fs_path, fpath).split(" ")
     results = subprocess.run(tcmd, stdout=subprocess.PIPE).stdout.decode('utf-8').split()
     assert len(new_fields)==len(results)
@@ -252,6 +252,8 @@ def main(args):
 
     # now make a df with all the results
     df = pd.DataFrame(all_samples)
+    # now calculate the number of gaps per MB
+    df["gaps_per_MB"] = df["numGaps"]/df["tot_size_scaffolds"]
     df.to_csv("genome_info.tsv", sep='\t')
 
 if __name__ == "__main__":

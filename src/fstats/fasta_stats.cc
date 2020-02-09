@@ -36,10 +36,10 @@ class Contig {
 
 class Scaffold {
     public:
-	long total_size, contig_size, gap_size, captured_gap_size;
+	long total_size, num_gaps, contig_size, gap_size, captured_gap_size;
 	std::list<Contig> contigs;
 	std::list<long> gaps;
-	Scaffold(void) : total_size(0), contig_size(0), gap_size(0), captured_gap_size(0), contigs(1, Contig()) { }
+	Scaffold(void) : total_size(0), num_gaps(0), contig_size(0), gap_size(0), captured_gap_size(0), contigs(1, Contig()) { }
 	~Scaffold(void) { }
 	bool operator<(const Scaffold &__a) const {
 		return total_size > __a.total_size;
@@ -56,7 +56,14 @@ class Scaffold {
 		std::list<long>::const_iterator __end_c = gaps.end();
 		for (; __c != __end_c; ++__c) {
 			captured_gap_size += *__c;
+            num_gaps += 1;
 		}
+	}
+	void print_gaps(void) const {
+        printf( "these are the gaps\n");
+        for (auto const& i : gaps) {
+          printf("%ld\n", i);
+        }
 	}
 	bool empty(void) {
 		if (contigs.back().empty() && contigs.size() > 1) {
@@ -181,16 +188,6 @@ static int read_file(char *filename, std::list<Scaffold> &scaffolds) {
 	return 1;
 }
 
-static void scaled_print(long i) {
-	if (i > 999999) {
-		printf("%.1f MB", (double)i / 1000000);
-	} else if (i > 999) {
-		printf("%.1f KB", (double)i / 1000);
-	} else {
-		printf("%ld", i);
-	}
-}
-
 static void print_stats(const std::list<Scaffold> &scaffolds) {
 	// make contig list
 	std::list<Contig> contigs;
@@ -204,6 +201,7 @@ static void print_stats(const std::list<Scaffold> &scaffolds) {
 	long scaffold_seq = 0;
 	long contig_seq = 0;
 	long gap_seq = 0;
+    //long num_gaps = 0;
 	long big_scaffolds = 0;
 	long big_scaffold_seq = 0;
 	for (a = scaffolds.begin(); a != end_a; ++a) {
@@ -222,6 +220,7 @@ static void print_stats(const std::list<Scaffold> &scaffolds) {
     long l50_scaffolds = 0;
     long l90_scaffolds = 0;
     long l95_scaffolds = 0;
+    long tot_num_gaps = 0;
     long x = 0;
     for (a = scaffolds.begin(); a != end_a && 1.05 * x < scaffold_seq; ++a) {
         if ( 2 * x < scaffold_seq){
@@ -235,6 +234,8 @@ static void print_stats(const std::list<Scaffold> &scaffolds) {
         ++l95_scaffolds;
         x += a->total_size;
         n95_scaffolds = a->total_size;
+        // now add the number of gaps
+        tot_num_gaps += a->num_gaps;
     }
     //reset the counter
     if (a != scaffolds.begin()) {
@@ -281,6 +282,7 @@ static void print_stats(const std::list<Scaffold> &scaffolds) {
     // contig N95
     // contig L95
 	// perGap
+    // totNumGaps
     // N95 scaffold lengths NO
 
 	// num_scaffolds
@@ -317,6 +319,8 @@ static void print_stats(const std::list<Scaffold> &scaffolds) {
 	printf("%ld\t", l95_contigs);
 	// percent gap
 	printf("%4.4f%%\t", (double)100 * gap_seq / scaffold_seq);
+    //number of gaps
+    printf("%ld\n", tot_num_gaps);
     // print the lengths of the N95 scaffolds
     //printf("[");
     //long temp = 0;
@@ -358,49 +362,6 @@ static void print_size(const int lengths[], int i, int one_less = 0, int right_j
 		} else {
 			printf("%3d   ", x);
 		}
-	}
-}
-
-static void print_coverage(const std::list<Scaffold> &scaffolds) {
-	const int lengths[] = {       0,
-				    100,     250,     500,
-				   1000,    2500,    5000,
-				  10000,   25000,   50000,
-				 100000,  250000,  500000,
-				1000000, 2500000, 5000000
-	};
-	const size_t lengths_size = sizeof(lengths) / sizeof(int);
-	size_t i;
-	std::vector<Stats> stats(lengths_size);
-	std::list<Scaffold>::const_iterator a = scaffolds.begin();
-	std::list<Scaffold>::const_iterator end_a = scaffolds.end();
-	for (; a != end_a; ++a) {
-		for (i = lengths_size - 1; a->total_size < lengths[i]; --i) { }
-		stats[i].add(*a);
-	}
-	for (i = lengths_size - 1; i != 0; --i) {
-		stats[i - 1].add(stats[i]);
-	}
-	printf(" Minimum    Number    Number     Total        Total     Scaffold\n");
-	printf("Scaffold      of        of      Scaffold      Contig     Contig\n");
-	printf(" Length   Scaffolds  Contigs     Length       Length    Coverage\n");
-	printf("--------  ---------  -------  -----------  -----------  --------\n");
-	int found_end = 0;
-	for (i = 0; i != lengths_size; ++i) {
-		const int &x = lengths[i];
-		const Stats &b = stats[i];
-		if (x == 0) {
-			printf("    All");
-		} else if (x < opt_min_length || (found_end && b.scaffolds == 0)) {
-			continue;
-		} else {
-			printf(" ");
-			print_size(lengths, i);
-		}
-		if (b.scaffolds == 0) {
-			found_end = 1;
-		}
-		printf("   %7s    %7s  %11s  %11s   %6.2f%%\n", pretty_print(b.scaffolds).c_str(), pretty_print(b.contigs).c_str(), pretty_print(b.s_size).c_str(), pretty_print(b.c_size).c_str(), b.coverage());
 	}
 }
 
