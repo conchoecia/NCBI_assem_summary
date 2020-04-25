@@ -1,0 +1,124 @@
+"""
+This script downloads all of the refseq protozoa genomes with annotations
+"""
+configfile: "config.yaml"
+
+import ftputil
+from Bio import Entrez
+from collections import defaultdict
+from io import StringIO
+import os
+import urllib
+import pandas as pd
+import sys
+from get_lineage import get_lineage
+
+dl_set_to_url = {"fungi":        "ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/fungi/assembly_summary.txt",
+                 "invertebrate": "ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/invertebrate/assembly_summary.txt",
+                 "plant":        "ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/plant/assembly_summary.txt",
+                 "protozoa":     "ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/protozoa/assembly_summary.txt",
+                 "vertebrate_mammalian": "ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/assembly_summary.txt",
+                 "vertebrate_other": "ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_other/assembly_summary.txt" }
+
+Entrez.email = config["EMAIL"]
+#Get one from https://www.ncbi.nlm.nih.gov/account/settings/ page
+Entrez.api_key= config["APIKEY"]
+
+which_set = config["dl_set"]
+if which_set not in dl_set_to_url:
+    print("You requested to download {} in config - dl_set".format(config["dl_set"]), file=sys.stderr)
+    raise IOError("The variable in 'dl_set' must be in ['fungi', 'invertebrate', 'plant', 'protozoa', 'vertebrate_mammalian', 'vertebrate_other']")
+
+url = dl_set_to_url(config["dl_set"])
+
+fp = urllib.request.urlopen(url) # it's a file like object and works just like a file
+data = fp.read().decode("utf-8")
+
+df = pd.read_csv(StringIO(data), skiprows=1, sep = "\t", header = 0)
+df.columns = [x.replace("#", "").strip() for x in df.columns]
+
+print(df["refseq_category"].unique())
+print(df.iloc[0])
+print(df.iloc[0]["ftp_path"])
+host = ftputil.FTPHost("ftp.ncbi.nlm.nih.gov", "anonymous", "password")
+keep_these_rows = []
+df["genome_file"] = ""
+df["gff_file"]    = ""
+df["nav_here"]    = ""
+df["file_prefix"] = ""
+df["genome_url"] = ""
+df["gff_url"] = ""
+
+for index, row in df.iterrows():
+    if row["refseq_category"] != "na":
+        print(row["assembly_accession"])
+        nav_here = row["ftp_path"].replace("ftp://ftp.ncbi.nlm.nih.gov", "")
+        host.chdir(nav_here)
+        file_list = [x for x in host.listdir(host.curdir) if ".gz" in x]
+        gl_1 = [x for x in file_list if "from_genomic.fna.gz" not in x]
+        genomic = [x for x in gl_1 if "genomic.fna.gz" in x][0]
+        gff_list = [x for x in file_list if "genomic.gff.gz" in x]
+        if len(gff_list) > 0:
+            gff = gff_list[0]
+        else:
+            gff = "no gff"
+        if gff != "no gff":
+            df.at[index, "genome_file"] = genomic
+            df.at[index, "gff_file"]    = gff
+            df.at[index, "nav_here"]    = nav_here
+            df.at[index, "prefix"]      = genomic.replace(".fna.gz", "")
+            df.at[index, "genome_url"]  = "ftp://ftp.ncbi.nlm.nih.gov{}/{}".format(nav_here,genomic)
+            df.at[index, "gff_url"]  = "ftp://ftp.ncbi.nlm.nih.gov{}/{}".format(nav_here,gff)
+            keep_these_rows.append(index)
+
+df_new = df.loc[keep_these_rows,]
+df_new.index = df_new["prefix"]
+print(list(df_new["prefix"]))
+
+rule all:
+    input:
+        expand("genomes/{genomes}.fna.gz", genomes = list(df_new["prefix"])),
+        expand("genomes/{genomes}.gff.gz", genomes = df_new["prefix"]),
+        "vertother_report.yaml"
+
+rule dl_genome:
+    output:
+        genome = "genomes/{genomes}.fna.gz"
+    params:
+        url = lambda wildcards: df_new.at[wildcards.genomes,"genome_url"],
+        gen_file = lambda wildcards: df_new.at[wildcards.genomes,"genome_file"]
+    shell:
+        """
+        wget '{params.url}'
+        mv {params.gen_file} genomes/
+        """
+
+rule dl_gff:
+    output:
+        genome = "genomes/{genomes}.gff.gz"
+    params:
+        url = lambda wildcards: df_new.at[wildcards.genomes,"gff_url"],
+        gff_file = lambda wildcards: df_new.at[wildcards.genomes,"gff_file"]
+    shell:
+        """
+        wget '{params.url}'
+        mv {params.gff_file} genomes/
+        """
+
+rule genome_report:
+    output:
+        report = "vertother_report.yaml"
+    run:
+        outfile = open(output.report, "w")
+        abspath = workflow.basedir
+        for index, row in df_new.iterrows():
+            print("{}:".format(row["assembly_accession"]), file=outfile)
+            print("  species: \"{}\"".format(row["organism_name"]), file=outfile)
+            lineage_dict = get_lineage(int(row["taxid"]))
+            for key in lineage_dict:
+                print("  {}: \"{}\"".format(key, lineage_dict[key]), file=outfile)
+            print("  genome: {}/genomes/{}".format(abspath, row["genome_file"]), file=outfile)
+            print("  gff: {}/genomes/{}".format(abspath, row["gff_file"]), file=outfile)
+            for key in row.index:
+               print("  {}: \"{}\"".format(key, row[key]), file=outfile)
+        outfile.close()
